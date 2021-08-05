@@ -3,23 +3,46 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.IO;
 
 public class MainManager : MonoBehaviour
 {
+
     public Brick BrickPrefab;
     public int LineCount = 6;
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public Text PlayerName;
+    public Text HighScoreText;
+    public InputField inputName;
     public GameObject GameOverText;
-    
+    public Button SaveBtn;
+    SaveData data = new SaveData();
+
+
     private bool m_Started = false;
     private int m_Points;
-    
+    private int highScore;
+  
+   
     private bool m_GameOver = false;
 
+
+    public static MainManager Instance;
     
-    // Start is called before the first frame update
+    private void Awake()
+    {
+
+        if (Instance != null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+        LoadScore();
+      
+    }
     void Start()
     {
         const float step = 0.6f;
@@ -37,9 +60,35 @@ public class MainManager : MonoBehaviour
             }
         }
     }
+    public void SaveScore()
+    {
+        SaveData data = new SaveData();
+      
+
+
+        data.score = highScore;
+        data.name = inputName.text;
+
+        string json = JsonUtility.ToJson(data);
+
+        File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
+        SceneManager.LoadScene(1);
+    }
+    public void LoadScore()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            SaveData data = JsonUtility.FromJson<SaveData>(json);
+            highScore = data.score;
+            HighScoreText.text ="Best Score : Player :"+data.name+"  Score : "+data.score;
+        }
+    }
 
     private void Update()
     {
+        Debug.Log(inputName.text);
         if (!m_Started)
         {
             if (Input.GetKeyDown(KeyCode.Space))
@@ -57,7 +106,7 @@ public class MainManager : MonoBehaviour
         {
             if (Input.GetKeyDown(KeyCode.Space))
             {
-                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+                SceneManager.LoadScene(1);
             }
         }
     }
@@ -70,6 +119,15 @@ public class MainManager : MonoBehaviour
 
     public void GameOver()
     {
+        if(highScore<m_Points)
+        {
+            SaveBtn.gameObject.SetActive(true);
+            inputName.gameObject.SetActive(true);
+            PlayerName.gameObject.SetActive(true);
+            highScore = m_Points;
+           
+        }
+        
         m_GameOver = true;
         GameOverText.SetActive(true);
     }
